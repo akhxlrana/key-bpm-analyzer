@@ -1,8 +1,5 @@
 import librosa
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-import joblib
 import os
 import logging
 import traceback
@@ -12,10 +9,6 @@ class MusicAnalyzer:
         # Set up logging for this class
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing MusicAnalyzer")
-        
-        self.scaler = StandardScaler()
-        self.genre_classifier = None
-        self.load_or_train_model()
     
     def extract_features(self, audio_path):
         """Extract audio features for analysis"""
@@ -122,55 +115,7 @@ class MusicAnalyzer:
             
             return None
     
-    def load_or_train_model(self):
-        """Load existing model or create a simple one"""
-        model_path = 'genre_model.joblib'
-        self.logger.info(f"Loading model from: {model_path}")
-        
-        if os.path.exists(model_path):
-            try:
-                self.genre_classifier = joblib.load(model_path)
-                self.logger.info("Loaded existing genre model successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to load existing model: {str(e)}")
-                self.logger.error(f"Full traceback: {traceback.format_exc()}")
-                self.logger.info("Creating new model instead...")
-                self.create_simple_model()
-        else:
-            self.logger.info("No existing model found, creating new one...")
-            self.create_simple_model()
-    
-    def create_simple_model(self):
-        """Create a simple genre classifier with basic training data"""
-        self.logger.info("Creating new genre classification model...")
-        
-        try:
-            # This is a simplified model - in practice, you'd train on a large dataset
-            from sklearn.datasets import make_classification
-            
-            # Generate synthetic training data (replace with real music dataset)
-            self.logger.info("Generating synthetic training data...")
-            X, y = make_classification(n_samples=1000, n_features=20, n_classes=4, 
-                                     n_informative=15, random_state=42)
-            
-            # Create genre labels
-            genre_labels = ['Pop', 'Rock', 'Jazz', 'Classical']
-            y_genres = [genre_labels[i % 4] for i in y]
-            
-            # Train classifier
-            self.logger.info("Training RandomForest classifier...")
-            self.genre_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-            self.genre_classifier.fit(X, y_genres)
-            
-            # Save model
-            self.logger.info("Saving model to genre_model.joblib...")
-            joblib.dump(self.genre_classifier, 'genre_model.joblib')
-            self.logger.info("Created and saved new genre model successfully")
-            
-        except Exception as e:
-            self.logger.error(f"Failed to create genre model: {str(e)}")
-            self.logger.error(f"Full traceback: {traceback.format_exc()}")
-            self.genre_classifier = None
+
     
     def predict_genre(self, features):
         """Predict genre from features using simple heuristics"""
