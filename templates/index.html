@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Analyzer - Key, BPM & Genre Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #fafafa;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8f0fe;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .result-value {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .upload-area {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Music Analyzer</h1>
+        <p class="subtitle">Upload any song to discover its Key, BPM, and Genre</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">🎶</div>
+            <div class="upload-text">Drop your music file here or click to browse</div>
+            <div class="upload-subtext">Supports WAV, MP3, FLAC, M4A, OGG files (max 16MB)</div>
+            <input type="file" id="fileInput" accept=".wav,.mp3,.flac,.m4a,.ogg">
+        </div>
+        
+        <button class="btn" id="analyzeBtn" disabled>Analyze Music</button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing your music... This may take a few moments.</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+        
+        <div class="results" id="results">
+            <h3 style="margin-bottom: 20px; color: #333;">Analysis Results</h3>
+            <div class="result-item">
+                <span class="result-label">🎹 Key:</span>
+                <span class="result-value" id="keyResult">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">🥁 BPM:</span>
+                <span class="result-value" id="bpmResult">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">🎭 Genre:</span>
+                <span class="result-value" id="genreResult">-</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+        const success = document.getElementById('success');
+        
+        let selectedFile = null;
+
+        // File input handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop handling
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            console.log('File selected:', {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: new Date(file.lastModified)
+            });
+            
+            // Validate file type
+            const allowedTypes = ['audio/wav', 'audio/mpeg', 'audio/flac', 'audio/mp4', 'audio/ogg'];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const allowedExtensions = ['wav', 'mp3', 'flac', 'm4a', 'ogg'];
+            
+            console.log('File validation:', {
+                extension: fileExtension,
+                isValidExtension: allowedExtensions.includes(fileExtension),
+                fileType: file.type
+            });
+            
+            if (!allowedExtensions.includes(fileExtension)) {
+                console.error('Invalid file type:', fileExtension);
+                showError('Please select a valid audio file (WAV, MP3, FLAC, M4A, OGG)');
+                return;
+            }
+
+            // Validate file size (16MB)
+            const maxSize = 16 * 1024 * 1024;
+            console.log('File size validation:', {
+                fileSize: file.size,
+                maxSize: maxSize,
+                isValidSize: file.size <= maxSize
+            });
+            
+            if (file.size > maxSize) {
+                console.error('File too large:', file.size, 'bytes (max:', maxSize, 'bytes)');
+                showError('File size too large. Please select a file smaller than 16MB.');
+                return;
+            }
+
+            selectedFile = file;
+            analyzeBtn.disabled = false;
+            hideMessages();
+            
+            console.log('File accepted and ready for analysis');
+            
+            // Update upload area text
+            uploadArea.innerHTML = `
+                <div class="upload-icon">✅</div>
+                <div class="upload-text">File selected: ${file.name}</div>
+                <div class="upload-subtext">Click "Analyze Music" to get started</div>
+            `;
+        }
+
+        // Analyze button click
+        analyzeBtn.addEventListener('click', analyzeMusic);
+
+        function analyzeMusic() {
+            console.log('Starting music analysis...');
+            
+            if (!selectedFile) {
+                console.error('No file selected for analysis');
+                return;
+            }
+
+            console.log('Preparing file for upload:', selectedFile.name);
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            // Show loading state
+            console.log('Showing loading state and making request to /upload');
+            loading.style.display = 'block';
+            analyzeBtn.disabled = true;
+            hideMessages();
+            results.style.display = 'none';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Received response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
+                });
+                
+                if (!response.ok) {
+                    console.error('HTTP Error:', response.status, response.statusText);
+                }
+                
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+
+                if (data.success) {
+                    console.log('Analysis successful:', data.results);
+                    displayResults(data.results);
+                    showSuccess('Analysis completed successfully!');
+                } else {
+                    console.error('Analysis failed:', data);
+                    let errorMsg = data.error || 'Analysis failed. Please try again.';
+                    if (data.solution) {
+                        errorMsg += '\n\nSolution: ' + data.solution;
+                    }
+                    if (data.detailed_error) {
+                        console.error('Detailed error:', data.detailed_error);
+                    }
+                    showError(errorMsg);
+                }
+            })
+            .catch(err => {
+                console.error('Network/Fetch error:', err);
+                console.error('Error details:', {
+                    name: err.name,
+                    message: err.message,
+                    stack: err.stack
+                });
+                
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+                showError('Network error. Please check your connection and try again.');
+            });
+        }
+
+        function displayResults(data) {
+            console.log('Displaying results:', data);
+            document.getElementById('keyResult').textContent = data.key;
+            document.getElementById('bpmResult').textContent = data.bpm;
+            document.getElementById('genreResult').textContent = data.genre;
+            results.style.display = 'block';
+        }
+
+        function showError(message) {
+            console.error('Showing error message:', message);
+            // Handle multiline messages by converting \n to <br>
+            error.innerHTML = message.replace(/\n/g, '<br>');
+            error.style.display = 'block';
+            success.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            console.log('Showing success message:', message);
+            success.textContent = message;
+            success.style.display = 'block';
+            error.style.display = 'none';
+        }
+
+        function hideMessages() {
+            console.log('Hiding all messages');
+            error.style.display = 'none';
+            success.style.display = 'none';
+        }
+        
+        // Add global error handler for unhandled errors
+        window.addEventListener('error', function(e) {
+            console.error('Unhandled JavaScript error:', {
+                message: e.message,
+                filename: e.filename,
+                lineno: e.lineno,
+                colno: e.colno,
+                error: e.error
+            });
+        });
+        
+        // Add handler for unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
+    </script>
+</body>
+</html>
