@@ -141,13 +141,5 @@ def upload_file():
     return jsonify({'error': 'Invalid file type. Please upload WAV, MP3, FLAC, M4A, or OGG files.'}), 400
 
 if __name__ == '__main__':
-    logger.info("Starting Music Analysis App...")
-    logger.info("Open your browser and go to: http://localhost:5000")
-    logger.info("Detailed logs will be saved to 'app.log'")
-    
-    try:
-        app.run(debug=True, host='0.0.0.0', port=5000)
-    except Exception as e:
-        logger.error(f"Failed to start Flask app: {str(e)}")
-        logger.error(f"Full traceback: {traceback.format_exc()}")
-        print(f"ERROR: Failed to start app - {str(e)}")
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

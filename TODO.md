@@ -1,0 +1,3 @@
+- [x] Fix key detection by updating key_profiles with proper rotated profiles for each key
+- [x] Replace genre prediction with a simple heuristic based on features (BPM, spectral centroid, etc.)
+- [x] Improve BPM detection by adding better logging and potentially a secondary method
